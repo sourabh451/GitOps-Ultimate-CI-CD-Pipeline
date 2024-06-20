@@ -1,0 +1,34 @@
+pipeline {
+  agent any
+  environment {
+    APP_NAME = "ultimate-cicd"
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        sh 'echo passed'
+        //git branch: 'master', url: 'https://github.com/sourabh451/GitOps-Ultimate-CI-CD-Pipeline.git'
+      }
+    }
+
+    stage('Update Deployment File') {
+        environment {
+            GIT_REPO_NAME = "GitOps-Ultimate-CI-CD-Pipeline"
+            GIT_USER_NAME = "sourabh451"
+        }
+        steps {
+            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                sh '''
+                    git config --global user.email "er.sourabhapatil@gmail.com"
+                    git config --global user.name "Sourabha Patil"
+                    git config --global --add safe.directory /var/lib/jenkins/workspace/gitops-ultimate-demo
+                    sed -i "s/${APP_NAME}.*/${APP_NAME}:${BUILD_NUMBER}/g" spring-boot-app-manifests/deployment.yml
+                    git add spring-boot-app-manifests/deployment.yml
+                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:master
+                '''
+            }
+        }
+    }
+  }
+}
